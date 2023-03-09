@@ -19,36 +19,26 @@ using NodaTime;
 using ProtoBuf;
 using System.IO;
 using QuantConnect.Data;
+using QuantConnect;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace QuantConnect.DataSource
 {
     /// <summary>
-    /// Example custom data type
+    /// BLS data type
     /// </summary>
     [ProtoContract(SkipConstructor = true)]
-    public class MyCustomDataUniverseType : BaseData
+    public partial class BLS : BaseData
     {
         /// <summary>
-        /// Some custom data property
+        /// Start time of the reporting period
         /// </summary>
-        public string SomeCustomProperty { get; set; } 
+        public DateTime PeriodStartTime {get; set;}
 
         /// <summary>
-        /// Some custom data property
+        /// End time of the reporting period
         /// </summary>
-        public decimal SomeNumericProperty { get; set; }
-
-        /// <summary>
-        /// Time passed between the date of the data and the time the data became available to us
-        /// </summary>
-        public TimeSpan Period { get; set; } = TimeSpan.FromDays(1);
-
-        /// <summary>
-        /// Time the data became available
-        /// </summary>
-        public override DateTime EndTime => Time + Period;
+        public DateTime PeriodEndTime  {get; set;}
 
         /// <summary>
         /// Return the URL string source of the file. This will be converted to a stream
@@ -59,13 +49,14 @@ namespace QuantConnect.DataSource
         /// <returns>String URL of source file.</returns>
         public override SubscriptionDataSource GetSource(SubscriptionDataConfig config, DateTime date, bool isLiveMode)
         {
+            var seriesId = config.Symbol.Value;
             return new SubscriptionDataSource(
                 Path.Combine(
                     Globals.DataFolder,
                     "alternative",
-                    "mycustomdatatype",
-                    "universe",
-                    $"{date.ToStringInvariant(DateFormat.EightCharacter)}.csv"
+                    "bls",
+                    $"{seriesId.Substring(0, 2).ToLowerInvariant()}",
+                    $"{seriesId}.csv"
                 ),
                 SubscriptionTransportMedium.LocalFile
             );
@@ -81,18 +72,49 @@ namespace QuantConnect.DataSource
         /// <returns>New instance</returns>
         public override BaseData Reader(SubscriptionDataConfig config, string line, DateTime date, bool isLiveMode)
         {
-            var csv = line.Split(','); 
+            var symbol = config.Symbol;
 
-            var someNumericProperty = decimal.Parse(csv[2], NumberStyles.Any, CultureInfo.InvariantCulture); 
-
-            return new MyCustomDataUniverseType
+            // Catch the row of column names
+            var data = line.Split(',');
+            if (data[0] == "EndTime")
             {
-                Symbol = new Symbol(SecurityIdentifier.Parse(csv[0]), csv[1]),
-                SomeNumericProperty = someNumericProperty,
-                SomeCustomProperty = csv[3],
-                Time =  date - Period,
-                Value = someNumericProperty
+                return null;
+            }
+
+            // Parse data rows
+            return new BLS
+            {
+                Symbol = symbol,
+                EndTime = Parse.DateTimeExact(data[0], "yyyy-MM-dd HH:mm:ss"),
+                PeriodStartTime = Parse.DateTimeExact(data[1], "yyyy-MM-dd"),
+                PeriodEndTime = Parse.DateTimeExact(data[2], "yyyy-MM-dd"),
+                Value = data[3].IfNotNullOrEmpty<decimal>(s => Parse.Decimal(s))
             };
+        }
+
+        /// <summary>
+        /// Clones the data
+        /// </summary>
+        /// <returns>A clone of the object</returns>
+        public override BaseData Clone()
+        {
+            return new BLS
+            {
+                Symbol = Symbol,
+                EndTime = EndTime,
+                PeriodStartTime = PeriodStartTime,
+                PeriodEndTime = PeriodEndTime,
+                Value = Value
+            };
+        }
+
+        /// <summary>
+        /// Indicates whether the data source is tied to an underlying symbol and requires that corporate events be applied to it as well, such as renames and delistings
+        /// </summary>
+        /// <returns>false</returns>
+        public override bool RequiresMapping()
+        {
+            return false;
         }
 
         /// <summary>
@@ -110,7 +132,7 @@ namespace QuantConnect.DataSource
         /// </summary>
         public override string ToString()
         {
-            return $"{Symbol} - {Value}";
+            return $"{Symbol}; {Value} for period {PeriodStartTime} - {PeriodEndTime}";
         }
 
         /// <summary>
@@ -135,7 +157,7 @@ namespace QuantConnect.DataSource
         /// <returns>The <see cref="T:NodaTime.DateTimeZone" /> of this data type</returns>
         public override DateTimeZone DataTimeZone()
         {
-            return DateTimeZone.Utc;
+            return TimeZones.NewYork;
         }
     }
 }

@@ -23,11 +23,12 @@ using Newtonsoft.Json;
 using NUnit.Framework;
 using QuantConnect.Data;
 using QuantConnect.DataSource;
+using QuantConnect.Configuration;
 
 namespace QuantConnect.DataLibrary.Tests
 {
     [TestFixture]
-    public class MyCustomDataTypeTests
+    public class BLSTests
     {
         [Test]
         public void JsonRoundTrip()
@@ -55,7 +56,6 @@ namespace QuantConnect.DataLibrary.Tests
                 stream.Position = 0;
 
                 var result = Serializer.Deserialize(type, stream);
-
                 AssertAreEqual(expected, result, filterByCustomAttributes: true);
             }
         }
@@ -67,6 +67,63 @@ namespace QuantConnect.DataLibrary.Tests
             var result = expected.Clone();
 
             AssertAreEqual(expected, result);
+        }
+
+
+        [Test]
+        public void GetMetaTest()
+        {
+            Config.Set("data-folder", "../../../../output/");
+
+            var seriesId = "NotASeriesId";
+            var meta = BLS.GetMetaData(seriesId);
+            Assert.AreEqual(meta, null);
+
+            seriesId = "CES0000000001";
+            meta = BLS.GetMetaData(seriesId);
+            Assert.AreEqual(meta.SeriesTitle, "All employees, thousands, total nonfarm, seasonally adjusted");
+            Assert.AreEqual(meta.SeriesId, seriesId);
+            Assert.AreEqual(meta.Seasonality, "Seasonally Adjusted");
+            Assert.AreEqual(meta.SurveyName, "Employment, Hours, and Earnings from the Current Employment Statistics survey (National)");
+            Assert.AreEqual(meta.SurveyAbbreviation, "CE");
+            Assert.AreEqual(meta.MeasureDataType, "ALL EMPLOYEES, THOUSANDS");
+            Assert.AreEqual(meta.Area, "undefined");
+            Assert.AreEqual(meta.Item, "undefined");
+            Assert.AreEqual(meta.CommerceIndustry, "Total nonfarm");
+            Assert.AreEqual(meta.CommerceSector, "Total nonfarm");
+            Assert.AreEqual(meta.TypeOfCases, "undefined");
+            Assert.AreEqual(meta.Occupation, "undefined");
+            Assert.AreEqual(meta.CPSLaborForceStatus, "undefined");
+            Assert.AreEqual(meta.DemographicAge, "undefined");
+            Assert.AreEqual(meta.DemographicEthnicOrigin, "undefined");
+            Assert.AreEqual(meta.DemographicRace, "undefined");
+            Assert.AreEqual(meta.DemographicGender, "undefined");
+            Assert.AreEqual(meta.DemographicEducation, "undefined");
+        }
+
+        [Test]
+        public void BLSReader()
+        {            
+            var instance = new BLS();
+            var fakeConfig = new SubscriptionDataConfig(
+                typeof(BLS),
+                Symbol.None,
+                Resolution.Daily,
+                TimeZones.NewYork,
+                TimeZones.NewYork,
+                false,
+                false,
+                false
+            );
+            var columnNames = "EndTime,Period Start Time,Period End Time,Value";
+            Assert.DoesNotThrow(() => { instance.Reader(fakeConfig, columnNames, DateTime.MinValue, false); });
+            var dataLine = "2015-01-31 00:00:00,2014-01-01,2015-01-01,3.4";
+            var result = instance.Reader(fakeConfig, dataLine, DateTime.MinValue, false) as BLS;
+
+            Assert.AreEqual(result.EndTime, new DateTime(2015, 1, 31));
+            Assert.AreEqual(result.PeriodStartTime, new DateTime(2014, 1, 1));
+            Assert.AreEqual(result.PeriodEndTime, new DateTime(2015, 1, 1));
+            Assert.AreEqual(result.Value, 3.4m);
         }
 
         private void AssertAreEqual(object expected, object result, bool filterByCustomAttributes = false)
@@ -87,12 +144,14 @@ namespace QuantConnect.DataLibrary.Tests
 
         private BaseData CreateNewInstance()
         {
-            return new MyCustomDataType
+            return new BLS
             {
                 Symbol = Symbol.Empty,
-                Time = DateTime.Today,
                 DataType = MarketDataType.Base,
-                SomeCustomProperty = "This is some market related information"
+                EndTime = new DateTime(2023, 1, 31),
+                PeriodStartTime = new DateTime(2022, 12, 1),
+                PeriodEndTime = new DateTime(2023, 1, 1),
+                Value = 1.0m
             };
         }
     }
