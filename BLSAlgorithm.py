@@ -14,34 +14,22 @@
 from AlgorithmImports import *
 
 ### <summary>
-### Example algorithm using the custom data type as a source of alpha
+### Example algorithm using the custom data type
 ### </summary>
-class CustomDataAlgorithm(QCAlgorithm):
+class BLSAlgorithm(QCAlgorithm):
     def Initialize(self):
         ''' Initialise the data and resolution required, as well as the cash and start-end dates for your algorithm. All algorithms must initialized.'''
-        
-        self.SetStartDate(2020, 10, 7)   #Set Start Date
-        self.SetEndDate(2020, 10, 11)    #Set End Date
-        self.equity_symbol = self.AddEquity("SPY", Resolution.Daily).Symbol
-        self.custom_data_symbol = self.AddData(MyCustomDataType, self.equity_symbol).Symbol
+        self.SetStartDate(2013, 1, 7);  #Set Start Date
+        self.SetEndDate(2014, 1, 1);    #Set End Date
+        series_id = "CUUR0000SAH1"
+        meta = BLS.GetMetaData(series_id) # You can use this method to get the meta data from the series Id. This is useful in the Research Environment
+        self.Log(str(meta))
+        self.symbol = self.AddData(BLS, series_id).Symbol
 
     def OnData(self, slice):
         ''' OnData event is the primary entry point for your algorithm. Each new data point will be pumped in here.
 
         :param Slice slice: Slice object keyed by symbol containing the stock data
         '''
-        data = slice.Get(MyCustomDataType)
-        if data:
-            custom_data = data[self.custom_data_symbol]
-            if custom_data.SomeCustomProperty == "buy":
-                self.SetHoldings(self.equitySymbol, 1)
-            elif custom_data.SomeCustomProperty == "sell":
-                self.SetHoldings(self.equitySymbol, -1)
-
-    def OnOrderEvent(self, orderEvent):
-        ''' Order fill event handler. On an order fill update the resulting information is passed to this method.
-
-        :param OrderEvent orderEvent: Order event details containing details of the events
-        '''
-        if orderEvent.Status == OrderStatus.Fill:
-            self.Debug(f'Purchased Stock: {orderEvent.Symbol}')
+        for dataset_symbol, data_point in slice.Get(BLS).items():
+            self.Log(f"{slice.Time} -- {dataset_symbol} -- Value: {data_point.Value}")
