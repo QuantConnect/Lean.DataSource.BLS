@@ -21,7 +21,7 @@ class BLSAlgorithm(QCAlgorithm):
         ''' Initialise the data and resolution required, as well as the cash and start-end dates for your algorithm. All algorithms must initialized.'''
         self.SetStartDate(2013, 1, 7);  #Set Start Date
         self.SetEndDate(2014, 1, 1);    #Set End Date
-        series_id = BLS.ConsumerPriceIndexAllUrbanConsumersCurrentSeries.ShelterInUSCityAverageAllUrbanConsumersNotSeasonallyAdjusted
+        series_id = "CUUR0000SAH1"
         meta = BLS.GetMetaData(series_id) # You can use this method to get the meta data from the series Id. This is useful in the Research Environment
         self.Log(str(meta))
         self.symbol = self.AddData(BLS, series_id).Symbol

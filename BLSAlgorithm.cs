@@ -36,7 +36,7 @@ namespace QuantConnect.DataLibrary.Tests
         {
             SetStartDate(2013, 1, 7);  //Set Start Date
             SetEndDate(2014, 1, 1);    //Set End Date
-            var seriesId = BLS.ConsumerPriceIndexAllUrbanConsumersCurrentSeries.ShelterInUSCityAverageAllUrbanConsumersNotSeasonallyAdjusted;
+            var seriesId = "CUUR0000SAH1";
             var meta = BLS.GetMetaData(seriesId); // You can use this method to get the meta data from the series Id. This is useful in the Research Environment
             Log(meta.ToString());
             _symbol = AddData<BLS>(seriesId).Symbol;

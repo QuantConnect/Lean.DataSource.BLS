@@ -15,19 +15,8 @@ MAX_TIME_FRAME_YEARS = 20 # The API allows a time frame of up to 20 years
 MAX_SERIES_IDS = 50 # The API endpoint only lets you select up to 50 series at one time (not documented)
 
 
-docs_table_html = """
-<div style="max-height: 400px; overflow-y: auto">
-    <table class="table qc-table table-reflow">
-        <thead>
-            <tr>
-                <th colspan="2">Name</th>
-            </tr>
-            <tr>
-                <th>Series Id</th>
-                <th>Accessor Code</th>
-            </tr>
-        </thead>
-        <tbody>"""
+docs_table_file = open("../docs-table.html", "w")
+docs_table_file.write("<p>The BLS database contains over 77 million series from over 60 different surveys, but not all of them are available on QuantConnect. The following sections show the integrated surveys and the series they contain.</p>")
 
 # Create the meta data directory
 if os.path.exists(META_DIR):
@@ -35,6 +24,11 @@ if os.path.exists(META_DIR):
 os.mkdir(META_DIR)
 
 for survey_name, series_ids in SERIES_IDS_BY_SURVEY_NAME.items():
+    docs_table_file.write(f"""
+<h4>{survey_name}</h4>
+<p>The following table show the supported series in the {survey_name} survey:</p>
+<table class='qc-table table'>""")
+    series_ids = sorted(series_ids)
     survey_code = series_ids[0][:2].lower()
     response = requests.get(f'https://download.bls.gov/pub/time.series/{survey_code}/{survey_code}.series', headers=HEADERS)
     lines = response.text.split("\n")
@@ -76,6 +70,8 @@ for survey_name, series_ids in SERIES_IDS_BY_SURVEY_NAME.items():
     meta_dir = META_DIR + survey_code
     os.mkdir(meta_dir)
 
+    series_id_written_to_docs_file = []
+    docs_table_column_names = []
     # Get and save time series data
     for j in range(0, len(series_ids), MAX_SERIES_IDS): 
         series_ids_subset = series_ids[j:j + MAX_SERIES_IDS]
@@ -99,91 +95,33 @@ for survey_name, series_ids in SERIES_IDS_BY_SURVEY_NAME.items():
             for data in json_data["Results"]["series"]:
                 series_id = data["seriesID"]
                 series = series_by_series_id[series_id]
-                if survey_code == "is": # The series in this survey all have the same title. Let's create a unique one and overwrite it.
-                    catalog = data["catalog"]
-                    measure_data_type = catalog["measure_data_type"]
-                    commerce_industry = catalog["commerce_industry"]
-                    type_of_cases = catalog["type_of_cases"]
-                    area = catalog["area"]
-                    seasonality = catalog["seasonality"]
-                    title = f"{measure_data_type}, {commerce_industry}, {type_of_cases}, {area}, {seasonality}"
-                    series.title = title
-
                 series.save_data(data, f"{output_dir}/{series_id}.csv", f"{meta_dir}/{series_id}.json")
 
-    # Create survey helper file and add survey helpers to docs table
-    helper_file_text = """/*
- * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
- * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
-*/
+                if len(series_id_written_to_docs_file) == 0:
+                    # Write docs table column names
+                    docs_table_file.write("""
+    <thead>
+        <tr>""")
+                    for key in data["catalog"].keys():
+                        if key in ["series_title", "survey_name", "survey_abbreviation"]:
+                            continue
+                        docs_table_column_names.append(key)
+                        column_name = key.replace("_", " ").title()
+                        docs_table_file.write(f"\n            <th>{column_name}</th>")
+                    docs_table_file.write("""
+        </tr>
+    </thead>
+    <tbody>""")
 
-namespace QuantConnect.DataSource
-{
-    /// <summary>
-    /// U.S. Bureau of Labor Statistics
-    /// </summary>
-    public partial class BLS
-    {
-        /// <summary>
-        /// """
-    helper_file_text += survey_name
-    helper_file_text += """
-        /// </summary>
-        public static class """
-    survey_name_code = survey_name.replace("-", " ").title().replace(",", "").replace("(", "").replace(")", "").replace(" ", "")
-    helper_file_text += survey_name_code
-    helper_file_text += """
-        {"""
-
-    # Sort dictionary by series title
-    sorted_series_by_series_id = dict(sorted(series_by_series_id.items(), key=lambda kvp: kvp[1].title))
-
-    for series_id, series in sorted_series_by_series_id.items():
-        docs_table_html += f"""
-            <tr>
-                <td colspan="2">{series.title}</td>
-            </tr>
-            <tr>
-                <td>{series_id}</td>
-                <td><code>BLS.{survey_name_code}.{series.codified_title}</code></td>
-            </tr>"""
-
-        helper_file_text += f"""
-            /// <summary>
-            /// {series.title}
-            /// </summary>
-            /// <remarks>
-            /// Retrieved from the BLS API - https://api.bls.gov/publicAPI/v2/timeseries/data/{series_id}
-            /// </remarks>
-            public static string {series.codified_title} = "{series_id}";
-        """
-   
-    helper_file_text += """}
-    }
-}
-"""
-
-    # Save helper file
-    with open("../" + survey_name_code + ".cs", "w") as f:
-        f.write(helper_file_text)
-
-docs_table_html += """
+                if series_id not in series_id_written_to_docs_file:
+                    docs_table_file.write("""\n        <tr>""")
+                    for key, value in data["catalog"].items():
+                        if key in docs_table_column_names:
+                            docs_table_file.write(f"\n            <td>{value}</td>")    
+                    docs_table_file.write("""\n        </tr>""")
+                    series_id_written_to_docs_file.append(series_id)
+    docs_table_file.write(f"""
     </tbody>
-</table>
-</div>
-"""
+</table>""")
 
-# Save docs table
-with open("../docs-table.html", "w") as f:
-    f.write(docs_table_html)
+docs_table_file.close()

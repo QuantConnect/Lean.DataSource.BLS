@@ -16,9 +16,8 @@ class Series:
 
     def save_data(self, data, output_path, meta_path):
         # Save catalog as meta data
-        self.catalog = data['catalog']
         with open(meta_path, "w") as file:
-            json.dump(self.catalog, file)
+            json.dump(data['catalog'], file)
 
         # Same time series data
         month_by_quarter_name = {
@@ -58,11 +57,3 @@ class Series:
                 timestamp = period_end_time + relativedelta(months=1, days=-1) 
 
                 writer.writerow((timestamp, period_start_time.date(), period_end_time.date(), data_point["value"]))
-
-    @property
-    def codified_title(self):
-        characters_to_remove = [",", "-", ".", "&", "(", ")", "'"]
-        codified_title = self.title
-        for char in characters_to_remove:
-            codified_title = codified_title.replace(char, " ")
-        return codified_title.title().replace(" ", "")
