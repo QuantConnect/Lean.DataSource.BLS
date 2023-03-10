@@ -7,6 +7,8 @@ import csv
 import os
 
 class Series:
+    OUTPUT_DIR = "../output/alternative/bls/"
+
     def __init__(self, series_id, begin_year, end_year, title, survey_code):
         self.series_id = series_id
         self.begin_year = begin_year
@@ -14,9 +16,9 @@ class Series:
         self.title = title
         self.survey_code = survey_code
 
-    def save_data(self, data, output_path, meta_path):
+    def save_data(self, data):
         # Save catalog as meta data
-        with open(meta_path, "w") as file:
+        with open(f"{self.OUTPUT_DIR}{self.series_id}.json", "w") as file:
             json.dump(data['catalog'], file)
 
         # Same time series data
@@ -26,6 +28,7 @@ class Series:
             "3rd Quarter" : "September",
             "4th Quarter" : "December"
         }
+        output_path = f"{self.OUTPUT_DIR}{self.series_id}.csv"
         write_column_headers = not os.path.exists(output_path)
         with open(output_path, 'a', newline='') as file:
             writer = csv.writer(file)

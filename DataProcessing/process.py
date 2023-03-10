@@ -9,19 +9,12 @@ from series_to_download import SERIES_IDS_BY_SURVEY_NAME
 
 HEADERS = {'Content-type': 'application/json'}
 API_KEY = "01a6561acaec4a16bb62e92768f8753d" # "518d7f62dd3b4a2a809fe5ba9648082b"
-OUTPUT_DIR = "../output/alternative/bls/"
-META_DIR = OUTPUT_DIR + "meta/"
 MAX_TIME_FRAME_YEARS = 20 # The API allows a time frame of up to 20 years
 MAX_SERIES_IDS = 50 # The API endpoint only lets you select up to 50 series at one time (not documented)
 
 
 docs_table_file = open("../docs-table.html", "w")
 docs_table_file.write("<p>The BLS database contains over 77 million series from over 60 different surveys, but not all of them are available on QuantConnect. The following sections show the integrated surveys and the series they contain.</p>")
-
-# Create the meta data directory
-if os.path.exists(META_DIR):
-    shutil.rmtree(META_DIR)
-os.mkdir(META_DIR)
 
 for survey_name, series_ids in SERIES_IDS_BY_SURVEY_NAME.items():
     docs_table_file.write(f"""
@@ -59,17 +52,6 @@ for survey_name, series_ids in SERIES_IDS_BY_SURVEY_NAME.items():
         end_year = int(adj_line[column_names.index("end_year")])
         series_by_series_id[series_id] = Series(series_id, begin_year, end_year, title, survey_code)
 
-
-    # Create an empty survey output directory
-    output_dir = OUTPUT_DIR + survey_code
-    if os.path.exists(output_dir):
-        shutil.rmtree(output_dir)
-    os.mkdir(output_dir)
-
-    # Create a survey meta data directory
-    meta_dir = META_DIR + survey_code
-    os.mkdir(meta_dir)
-
     series_id_written_to_docs_file = []
     docs_table_column_names = []
     # Get and save time series data
@@ -95,7 +77,7 @@ for survey_name, series_ids in SERIES_IDS_BY_SURVEY_NAME.items():
             for data in json_data["Results"]["series"]:
                 series_id = data["seriesID"]
                 series = series_by_series_id[series_id]
-                series.save_data(data, f"{output_dir}/{series_id}.csv", f"{meta_dir}/{series_id}.json")
+                series.save_data(data)
 
                 if len(series_id_written_to_docs_file) == 0:
                     # Write docs table column names
