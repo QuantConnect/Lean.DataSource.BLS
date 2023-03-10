@@ -55,7 +55,6 @@ namespace QuantConnect.DataSource
                     Globals.DataFolder,
                     "alternative",
                     "bls",
-                    $"{seriesId.Substring(0, 2).ToLowerInvariant()}",
                     $"{seriesId}.csv"
                 ),
                 SubscriptionTransportMedium.LocalFile
