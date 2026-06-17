@@ -40,8 +40,7 @@ Algorithms should use null-checking (`HasValue` in C#, `is not None` in Python) 
 | `BLSEconomicSurveysJolts.cs` | JOLTS data model class (8 series) |
 | `BLSEconomicSurveysAlgorithm.cs` | C# demonstration algorithm |
 | `BLSEconomicSurveysAlgorithm.py` | Python demonstration algorithm |
-| `DataProcessing/process.ipynb` | Jupyter notebook for data processing |
-| `DataProcessing/config.json` | Processing configuration |
+| `process.ipynb` | Jupyter notebook for data processing |
 | `tests/BLSEconomicSurveysTests.cs` | Unit tests |
 | `listing-about.md` | Marketplace listing description |
 | `listing-documentation.md` | Full documentation |
@@ -58,7 +57,12 @@ cd Lean.DataSource.BLS
 
 ### 2. Configure
 
-Edit `DataProcessing/config.json` and set your BLS API key:
+The processing notebook runs without any configuration in QC Cloud — secrets and
+paths come from the environment, and a BLS API key is optional (the BLS API v2
+serves this dataset's query volume within the unregistered limits).
+
+For local development, optionally create a `config.json` next to `process.ipynb`
+(in the repo root) to override the defaults:
 ```json
 {
   "bls-api-key": "YOUR_BLS_API_KEY_HERE",
@@ -82,7 +86,6 @@ dotnet build tests/Tests.csproj
 python -m venv nb_venv
 source nb_venv/bin/activate  # or nb_venv\Scripts\activate on Windows
 pip install requests nbconvert ipykernel pandas
-cd DataProcessing
 jupyter nbconvert --to notebook --execute process.ipynb
 ```
 
