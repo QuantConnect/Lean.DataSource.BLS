@@ -40,7 +40,7 @@ namespace QuantConnect.DataSource
 
         public override SubscriptionDataSource GetSource(SubscriptionDataConfig config, DateTime date, bool isLiveMode)
         {
-            var source = $"https://fxmacrodata.com/api/v1/calendar/{config.Symbol.Value.ToLowerInvariant()}?limit=100";
+            var source = $"https://api.fxmacrodata.com/v1/calendar/{config.Symbol.Value.ToLowerInvariant()}?limit=100";
             var apiKey = Config.Get("fxmacrodata-api-key");
             if (!string.IsNullOrWhiteSpace(apiKey))
             {
