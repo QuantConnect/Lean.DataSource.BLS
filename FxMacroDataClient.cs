@@ -259,10 +259,11 @@ namespace QuantConnect.DataSource
                 query,
                 variables = variables ?? new { }
             });
-            using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync($"{_baseUrl}/graphql", content).ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/graphql")
+            {
+                Content = new StringContent(payload, Encoding.UTF8, "application/json")
+            };
+            return await SendAsync(request).ConfigureAwait(false);
         }
 
         public void Dispose()
@@ -273,18 +274,26 @@ namespace QuantConnect.DataSource
             }
         }
 
-        private Task<string> GetAsync(string path, IDictionary<string, object> query = null)
+        private async Task<string> GetAsync(string path, IDictionary<string, object> query = null)
         {
-            return _httpClient.GetStringAsync(BuildUri(path, query));
+            using var request = new HttpRequestMessage(HttpMethod.Get, BuildUri(path, query));
+            return await SendAsync(request).ConfigureAwait(false);
+        }
+
+        private async Task<string> SendAsync(HttpRequestMessage request)
+        {
+            if (!string.IsNullOrWhiteSpace(_apiKey))
+            {
+                request.Headers.Add("X-API-Key", _apiKey);
+            }
+            using var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         }
 
         private Uri BuildUri(string path, IDictionary<string, object> query)
         {
-            var parameters = new Dictionary<string, object>(query ?? new Dictionary<string, object>());
-            if (!string.IsNullOrWhiteSpace(_apiKey))
-            {
-                parameters["api_key"] = _apiKey;
-            }
+            var parameters = query ?? new Dictionary<string, object>();
             var url = $"{_baseUrl}/{path.TrimStart('/')}";
             var queryString = string.Join("&", parameters
                 .Where(pair => pair.Value != null)
