@@ -53,7 +53,16 @@ namespace QuantConnect.DataSource
 
         public override BaseData Reader(SubscriptionDataConfig config, string line, DateTime date, bool isLiveMode)
         {
-            var payload = JsonConvert.DeserializeObject<CalendarPayload>(line);
+            CalendarPayload payload;
+            try
+            {
+                payload = JsonConvert.DeserializeObject<CalendarPayload>(line);
+            }
+            catch (JsonException)
+            {
+                // Error bodies or unexpected shapes are skipped instead of failing the subscription.
+                return null;
+            }
             var entries = (payload?.Data ?? new List<CalendarRow>()).Select(row => new FxMacroDataReleaseCalendar
             {
                 Symbol = config.Symbol,
