@@ -19,7 +19,7 @@
 
 ## Publication Lag
 
-Each data point's `EndTime` is set to the **exact release date and time** scraped from BLS schedule pages at `https://www.bls.gov/schedule/{year}/home.htm`. CPI, CES, and PPI are released at 08:30 AM ET; JOLTS at 10:00 AM ET. Release dates are only available from the year 2000 onward (when BLS began publishing online schedules), so data prior to January 2000 is not included. A full run of the processing script caches scraped release dates to `release_dates_cache.json` to avoid repeated scraping. A daily incremental run keeps the release date of every published row and only scrapes the schedule years from the latest published release to the run's year.
+Each data point's `EndTime` is set to the **exact release date and time** scraped from BLS schedule pages at `https://www.bls.gov/schedule/{year}/home.htm`. CPI, CES, and PPI are released at 08:30 AM ET; JOLTS at 10:00 AM ET. Release dates are only available from the year 2000 onward (when BLS began publishing online schedules), so data prior to January 2000 is not included. A full run of the processing script caches scraped release dates to `release_dates_cache.json` to avoid repeated scraping. A daily incremental run keeps the release date of every published row and only scrapes the schedule years from the latest published release to the run's year. Published release dates take precedence over scraped ones, so a row stamped with a wrong date is only corrected by a full run.
 
 ## Partial Coverage Notes
 
