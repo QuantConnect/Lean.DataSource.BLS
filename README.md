@@ -19,7 +19,7 @@
 
 ## Publication Lag
 
-Each data point's `EndTime` is set to the **exact release date and time** scraped from BLS schedule pages at `https://www.bls.gov/schedule/{year}/home.htm`. CPI, CES, and PPI are released at 08:30 AM ET; JOLTS at 10:00 AM ET. Release dates are only available from the year 2000 onward (when BLS began publishing online schedules), so data prior to January 2000 is not included. A full run of the processing script caches scraped release dates to `release_dates_cache.json` to avoid repeated scraping. A daily incremental run only scrapes the schedule years from the latest published release to the run's year, and never before the previous year, the first one it fetches from the API. A scraped release date wins over a published one, so a release BLS moves is restamped; the date of a published row covers the years that were not scraped.
+Each data point's `EndTime` is set to the **exact release date and time** scraped from BLS schedule pages at `https://www.bls.gov/schedule/{year}/home.htm`. CPI, CES, and PPI are released at 08:30 AM ET; JOLTS at 10:00 AM ET. Release dates are only available from the year 2000 onward (when BLS began publishing online schedules), so data prior to January 2000 is not included. A full run of the processing script caches scraped release dates to `release_dates_cache.json` to avoid repeated scraping, and scrapes again when the cache has no period of the run's year. A daily incremental run only scrapes the run's year and the years that can date a period the API serves without a readable published release date, which never start before the previous year, the first one it fetches from the API. A scraped release date wins over a published one, so a release BLS moves is restamped when its year is scraped; the date of a published row covers the pages that were not scraped or did not load. A survey fails instead of publishing when a period from the previous year on has a value but no release date, except the months listed below, and on an incremental run when a published row whose date cannot be read is not stamped again.
 
 ## Partial Coverage Notes
 
@@ -27,6 +27,7 @@ Some series within a survey category were introduced after the dataset's start d
 - **PPI Final Demand series** (FinalDemand, CorePpi, FinalDemandGoods, etc.) were introduced in November 2009. These columns will be empty for data points before that date. The Reader handles empty values by returning `null` for those properties.
 - **CES AverageHourlyEarnings, AverageWeeklyHours, AverageWeeklyEarnings** series (CEU0500000003, CEU0500000002, CEU0500000011) may have limited early data.
 - **JOLTS** data begins November 2007 (earliest release date found on BLS schedule pages in new format).
+- **October 2025** (CPI, CES, PPI) and **September 2025** (JOLTS) are not included: after the 2025 government shutdown BLS published them late, or for CPI only in part, without a schedule entry of their own, so they have no release date to stamp.
 
 Algorithms should use null-checking (`HasValue` in C#, `is not None` in Python) when accessing properties that may be absent for older data points.
 
