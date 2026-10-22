@@ -27,6 +27,7 @@ Some series within a survey category were introduced after the dataset's start d
 - **PPI Final Demand series** (FinalDemand, CorePpi, FinalDemandGoods, etc.) were introduced in November 2009. These columns will be empty for data points before that date. The Reader handles empty values by returning `null` for those properties.
 - **CES AverageHourlyEarnings, AverageWeeklyHours, AverageWeeklyEarnings** series (CEU0500000003, CEU0500000002, CEU0500000011) may have limited early data.
 - **JOLTS** data begins November 2007 (earliest release date found on BLS schedule pages in new format).
+- **October 2025** (CPI, CES, PPI) and **September 2025** (JOLTS) are not included: after the 2025 government shutdown BLS published them late, or for CPI only in part, without a schedule entry of their own, so they have no release date to stamp.
 
 Algorithms should use null-checking (`HasValue` in C#, `is not None` in Python) when accessing properties that may be absent for older data points.
 
